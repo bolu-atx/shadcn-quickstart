@@ -22,6 +22,11 @@ export function SignIn() {
             Enter your email and password below to <br />
             log into your account
           </CardDescription>
+          <div className='bg-muted text-muted-foreground rounded-md p-3 text-sm'>
+            <p className='font-medium mb-1'>Demo Credentials:</p>
+            <p>Email: demo@example.com</p>
+            <p>Password: password</p>
+          </div>
         </CardHeader>
         <CardContent>
           <UserAuthForm redirectTo={redirect} />

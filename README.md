@@ -49,7 +49,65 @@ pnpm install
 pnpm run dev
 ```
 
-4. Open [http://localhost:5173](http://localhost:5173) in your browser.
+4. Open [http://localhost:5173](http://localhost:5173) in your browser
+
+5. Sign in with demo credentials:
+   - **Email:** demo@example.com
+   - **Password:** password
+
+### Project Status
+
+✅ **Ready to use** - This template is fully functional in demo mode
+🔌 **Backend-agnostic** - Works with any backend (FastAPI, Express, Django, etc.)
+🎨 **Customizable** - Easy to brand and extend
+
+## Next Steps
+
+### For Humans 👤
+
+After getting the app running, here's what to do next:
+
+1. **Explore the Demo** - Sign in with `demo@example.com` / `password` and explore all the pages
+2. **Customize Branding** - Update colors, logo, and app name (see [Branding & Theme](#1-branding--theme))
+3. **Connect Your Backend** - Follow the [Authentication Guide](#4-authentication-backend-agnostic) to connect to your API
+4. **Modify Navigation** - Edit `src/components/layout/data/sidebar-data.ts` to add your pages
+5. **Build Your Pages** - Create new routes in `src/routes/` for your features
+
+### For AI Agents 🤖
+
+This codebase is designed to be agent-friendly. Here's how to work with it:
+
+**Project Structure:**
+- `src/routes/` - File-based routing (TanStack Router)
+- `src/components/` - Reusable UI components
+- `src/lib/auth/` - Authentication service (backend-agnostic)
+- `src/stores/` - Zustand state management
+- `src/features/` - Feature-specific components
+
+**Key Files:**
+- `src/lib/auth/auth-service.ts` - Auth integration point (set DEMO_MODE = false for real backend)
+- `src/components/layout/data/sidebar-data.ts` - Navigation configuration
+- `src/routes/__root.tsx` - Root layout and providers
+- `.env` - Environment variables (create from .env.example)
+
+**Common Tasks:**
+
+1. **Add a new page:**
+   - Create file in `src/routes/` (e.g., `src/routes/my-page.tsx`)
+   - Add route to sidebar in `src/components/layout/data/sidebar-data.ts`
+
+2. **Connect to backend:**
+   - Update `VITE_API_URL` in `.env`
+   - Set `DEMO_MODE = false` in `src/lib/auth/auth-service.ts`
+   - Backend should implement: POST /auth/login, POST /auth/register, GET /auth/me
+
+3. **Add a component:**
+   - Use `npx shadcn@latest add [component-name]` for Shadcn components
+   - Create custom components in `src/components/custom/`
+
+4. **Modify theme:**
+   - Edit CSS variables in `src/index.css`
+   - Or use https://ui.shadcn.com/themes for visual editing
 
 ## Customization Guide
 
@@ -166,48 +224,270 @@ function ProtectedPage() {
 }
 ```
 
-### 4. Authentication
+### 4. Authentication (Backend-Agnostic)
 
-This template includes auth page examples but **no auth logic is implemented**. To add authentication:
+This template includes a **fully functional authentication system** that works in demo mode by default and can be connected to **any backend framework**.
 
-#### Option 1: Custom Authentication
+#### Current Setup
 
-1. Create an auth context:
+✅ **Demo Mode Active** - Sign in with: `demo@example.com` / `password`
+✅ **Complete Auth UI** - Login, signup, forgot password, OTP pages
+✅ **OAuth Ready** - GitHub, Facebook, Google integration helpers
+✅ **Backend Agnostic** - Works with FastAPI, Express, Django, Rails, etc.
+
+#### Architecture
+
+The auth system is located in `src/lib/auth/auth-service.ts` and uses:
+- **Zustand** for state management (`src/stores/auth-store.ts`)
+- **Cookies** for token persistence
+- **Axios** for API calls (configurable)
+
+#### Using Demo Mode
+
+Demo mode is enabled by default. Test authentication with:
+- Email: `demo@example.com`
+- Password: `password`
+
+To modify demo behavior, edit `src/lib/auth/auth-service.ts`:
 ```typescript
-// src/contexts/auth-context.tsx
-import { createContext, useContext, useState } from 'react'
-
-const AuthContext = createContext(null)
-
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-
-  const login = async (credentials) => {
-    // Your login logic
-  }
-
-  const logout = () => {
-    // Your logout logic
-  }
-
-  return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  )
+const DEMO_MODE = true // Change to false when ready
+const DEMO_CREDENTIALS = {
+  email: 'demo@example.com',
+  password: 'password',
 }
 ```
 
-2. Protect routes in your route definitions
-3. Update the sign-in/sign-up pages in `src/routes/(auth)/`
+#### Connecting to Your Backend
 
-#### Option 2: Third-Party Auth
+##### Step 1: Set up environment variables
 
-Popular options:
-- [Clerk](https://clerk.com) - User management and authentication
-- [Supabase Auth](https://supabase.com/auth) - Open source auth
-- [Auth.js (NextAuth)](https://authjs.dev) - Framework-agnostic auth
-- [Firebase Auth](https://firebase.google.com/products/auth) - Google's auth solution
+Create a `.env` file:
+```bash
+VITE_API_URL=http://localhost:8000
+```
+
+##### Step 2: Disable demo mode
+
+Edit `src/lib/auth/auth-service.ts`:
+```typescript
+const DEMO_MODE = false // Disable demo mode
+```
+
+##### Step 3: Implement backend endpoints
+
+The auth service expects these endpoints:
+
+**Required Endpoints:**
+- `POST /auth/login` - Sign in with credentials
+- `POST /auth/register` - Create new account
+- `POST /auth/logout` - Sign out
+- `GET /auth/me` - Get current user
+
+**Optional Endpoints:**
+- `POST /auth/refresh` - Refresh access token
+- `POST /auth/forgot-password` - Request password reset
+- `POST /auth/reset-password` - Reset password with token
+
+#### Backend Integration Examples
+
+##### FastAPI (Python)
+
+```python
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class AuthResponse(BaseModel):
+    user: dict
+    accessToken: str
+
+@app.post("/auth/login", response_model=AuthResponse)
+async def login(credentials: LoginRequest):
+    # Your authentication logic
+    user = authenticate_user(credentials.email, credentials.password)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    access_token = create_access_token(user.id)
+    return {
+        "user": {
+            "accountNo": user.account_no,
+            "email": user.email,
+            "name": user.name,
+            "role": user.roles
+        },
+        "accessToken": access_token
+    }
+
+@app.get("/auth/me")
+async def get_current_user(token: str = Depends(get_token)):
+    user = verify_token(token)
+    return user
+```
+
+##### Express (Node.js/TypeScript)
+
+```typescript
+import express from 'express'
+import { authenticateUser, createAccessToken } from './auth'
+
+const app = express()
+
+app.post('/auth/login', async (req, res) => {
+  const { email, password } = req.body
+
+  const user = await authenticateUser(email, password)
+  if (!user) {
+    return res.status(401).json({ error: 'Invalid credentials' })
+  }
+
+  const accessToken = createAccessToken(user.id)
+  res.json({
+    user: {
+      accountNo: user.accountNo,
+      email: user.email,
+      name: user.name,
+      role: user.roles
+    },
+    accessToken
+  })
+})
+
+app.get('/auth/me', authenticateToken, async (req, res) => {
+  res.json(req.user)
+})
+```
+
+##### Django (Python)
+
+```python
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from rest_framework.decorators import api_view
+import json
+
+@require_http_methods(["POST"])
+def login(request):
+    data = json.loads(request.body)
+    email = data.get('email')
+    password = data.get('password')
+
+    user = authenticate(email=email, password=password)
+    if not user:
+        return JsonResponse({'error': 'Invalid credentials'}, status=401)
+
+    access_token = create_access_token(user.id)
+    return JsonResponse({
+        'user': {
+            'accountNo': user.account_no,
+            'email': user.email,
+            'name': user.name,
+            'role': user.roles
+        },
+        'accessToken': access_token
+    })
+```
+
+#### OAuth Integration
+
+OAuth buttons are ready but require backend setup:
+
+**1. Update OAuth configuration** in `src/lib/auth/auth-service.ts`:
+```typescript
+export const OAUTH_PROVIDERS = {
+  github: {
+    name: 'GitHub',
+    authUrl: `${API_BASE_URL}/auth/oauth/github`,
+  },
+  // ... other providers
+}
+```
+
+**2. Implement backend OAuth flow:**
+
+```python
+# FastAPI example
+@app.get("/auth/oauth/github")
+async def github_oauth():
+    authorization_url = get_github_oauth_url()
+    return RedirectResponse(authorization_url)
+
+@app.get("/auth/oauth/github/callback")
+async def github_callback(code: str):
+    # Exchange code for user data
+    user_data = await exchange_github_code(code)
+    user = get_or_create_user(user_data)
+    access_token = create_access_token(user.id)
+
+    # Redirect back to frontend with token
+    return RedirectResponse(
+        f"http://localhost:5173/auth/callback?token={access_token}"
+    )
+```
+
+**3. OAuth buttons work automatically** - clicking GitHub/Facebook will call `initiateOAuthLogin()`
+
+#### Third-Party Auth Services
+
+While this template supports custom backends, you can also integrate with:
+
+- **[Clerk](https://clerk.com)** - User management and authentication
+- **[Supabase Auth](https://supabase.com/auth)** - Open source auth
+- **[Auth.js](https://authjs.dev)** - Framework-agnostic auth
+- **[Firebase Auth](https://firebase.google.com)** - Google's auth solution
+
+Replace the contents of `src/lib/auth/auth-service.ts` with your chosen provider's SDK.
+
+#### Protected Routes
+
+Routes under `src/routes/_authenticated/` are automatically protected. To add protection logic:
+
+Edit `src/routes/_authenticated/route.tsx`:
+```typescript
+export const Route = createFileRoute('/_authenticated')({
+  component: AuthenticatedLayout,
+  beforeLoad: ({ context }) => {
+    // Check if user is authenticated
+    const { auth } = useAuthStore.getState()
+    if (!auth.accessToken) {
+      throw redirect({
+        to: '/sign-in',
+        search: { redirect: location.href }
+      })
+    }
+  }
+})
+```
+
+#### Customizing Auth Behavior
+
+**Change token expiration:**
+```typescript
+// In user-auth-form.tsx
+const userWithExp = {
+  ...response.user,
+  exp: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+}
+```
+
+**Add remember me:**
+```typescript
+// In auth-store.ts - use localStorage instead of cookies
+localStorage.setItem('remember_me', 'true')
+```
+
+**Add role-based access:**
+```typescript
+// Check user roles in beforeLoad
+if (!user.role.includes('admin')) {
+  throw redirect({ to: '/unauthorized' })
+}
+```
 
 ### 5. Adding New Components
 
